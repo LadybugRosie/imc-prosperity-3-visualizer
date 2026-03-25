@@ -16,7 +16,7 @@ export function AlgorithmSummaryCard(): ReactNode {
   });
 
   const downloadResults = useAsync<void>(async () => {
-    await downloadAlgorithmResults(summary.id);
+    await downloadAlgorithmResults(summary.id, summary.round);
   });
 
   return (

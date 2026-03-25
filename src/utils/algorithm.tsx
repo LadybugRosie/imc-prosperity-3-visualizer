@@ -7,6 +7,7 @@ import {
   AlgorithmSummary,
   CompressedAlgorithmDataRow,
   CompressedListing,
+  CompressedConversionObservation,
   CompressedObservations,
   CompressedOrder,
   CompressedOrderDepth,
@@ -22,6 +23,7 @@ import {
   Trade,
   TradingState,
 } from '../models.ts';
+import { normalizeConversionObservation } from './conversionObservations.ts';
 import { authenticatedAxios } from './axios.ts';
 
 export class AlgorithmParseError extends Error {
@@ -125,22 +127,38 @@ function decompressTrades(compressed: CompressedTrade[]): Record<ProsperitySymbo
   return trades;
 }
 
+const conversionObservationArrayFields = [
+  'bidPrice',
+  'askPrice',
+  'transportFees',
+  'exportTariff',
+  'importTariff',
+  'sunlight',
+  'humidity',
+];
+
+function decompressConversionObservation(compressed: CompressedConversionObservation): ConversionObservation {
+  if (Array.isArray(compressed)) {
+    const observation: Record<string, number> = {};
+
+    compressed.forEach((value, index) => {
+      const key = conversionObservationArrayFields[index];
+      if (key !== undefined) {
+        observation[key] = value;
+      }
+    });
+
+    return normalizeConversionObservation(observation);
+  }
+
+  return normalizeConversionObservation(compressed);
+}
+
 function decompressObservations(compressed: CompressedObservations): Observation {
   const conversionObservations: Record<Product, ConversionObservation> = {};
 
-  for (const [
-    product,
-    [bidPrice, askPrice, transportFees, exportTariff, importTariff, sugarPrice, sunlightIndex],
-  ] of Object.entries(compressed[1])) {
-    conversionObservations[product] = {
-      bidPrice,
-      askPrice,
-      transportFees,
-      exportTariff,
-      importTariff,
-      sugarPrice,
-      sunlightIndex,
-    };
+  for (const [product, observation] of Object.entries(compressed[1])) {
+    conversionObservations[product] = decompressConversionObservation(observation);
   }
 
   return {
@@ -306,9 +324,22 @@ export async function downloadAlgorithmLogs(algorithmId: string): Promise<void> 
   downloadFile(logsUrl);
 }
 
-export async function downloadAlgorithmResults(algorithmId: string): Promise<void> {
+function getResultsPath(round: string): string {
+  if (round === 'ROUND0') {
+    return 'tutorial';
+  }
+
+  const match = round.match(/^ROUND(\d+)$/);
+  if (match !== null) {
+    return `round${match[1]}`;
+  }
+
+  return round.toLowerCase();
+}
+
+export async function downloadAlgorithmResults(algorithmId: string, round: string): Promise<void> {
   const detailsResponse = await authenticatedAxios.get(
-    `https://bz97lt8b1e.execute-api.eu-west-1.amazonaws.com/prod/results/tutorial/${algorithmId}`,
+    `https://bz97lt8b1e.execute-api.eu-west-1.amazonaws.com/prod/results/${getResultsPath(round)}/${algorithmId}`,
   );
 
   downloadFile(detailsResponse.data.algo.summary.activitiesLog);

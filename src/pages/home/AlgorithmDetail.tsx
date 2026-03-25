@@ -43,7 +43,7 @@ export function AlgorithmDetail({ position, algorithm, proxy }: AlgorithmDetailP
   });
 
   const downloadResults = useAsync<void>(async () => {
-    await downloadAlgorithmResults(algorithm.id);
+    await downloadAlgorithmResults(algorithm.id, algorithm.round);
   });
 
   const openInVisualizer = useAsync<void>(async () => {

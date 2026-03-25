@@ -21,8 +21,13 @@ export function ConversionPriceChart({ symbol }: ConversionPriceChartProps): Rea
       continue;
     }
 
-    bidPriceData.push([row.state.timestamp, observation.bidPrice]);
-    askPriceData.push([row.state.timestamp, observation.askPrice]);
+    if (observation.bidPrice !== undefined) {
+      bidPriceData.push([row.state.timestamp, observation.bidPrice]);
+    }
+
+    if (observation.askPrice !== undefined) {
+      askPriceData.push([row.state.timestamp, observation.askPrice]);
+    }
   }
 
   const options: Highcharts.Options = {

@@ -21,9 +21,17 @@ export function TransportChart({ symbol }: TransportChartProps): ReactNode {
       continue;
     }
 
-    transportFeesData.push([row.state.timestamp, observation.transportFees]);
-    importTariffData.push([row.state.timestamp, observation.importTariff]);
-    exportTariffData.push([row.state.timestamp, observation.exportTariff]);
+    if (observation.transportFees !== undefined) {
+      transportFeesData.push([row.state.timestamp, observation.transportFees]);
+    }
+
+    if (observation.importTariff !== undefined) {
+      importTariffData.push([row.state.timestamp, observation.importTariff]);
+    }
+
+    if (observation.exportTariff !== undefined) {
+      exportTariffData.push([row.state.timestamp, observation.exportTariff]);
+    }
   }
 
   const series: Highcharts.SeriesOptionsType[] = [

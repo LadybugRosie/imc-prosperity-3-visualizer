@@ -43,13 +43,16 @@ export interface Listing {
 }
 
 export interface ConversionObservation {
-  bidPrice: number;
-  askPrice: number;
-  transportFees: number;
-  exportTariff: number;
-  importTariff: number;
-  sugarPrice: number;
-  sunlightIndex: number;
+  bidPrice?: number;
+  askPrice?: number;
+  transportFees?: number;
+  exportTariff?: number;
+  importTariff?: number;
+  sunlight?: number;
+  humidity?: number;
+  sugarPrice?: number;
+  sunlightIndex?: number;
+  [key: string]: number | undefined;
 }
 
 export interface Observation {
@@ -116,15 +119,7 @@ export type CompressedTrade = [
   timestamp: Time,
 ];
 
-export type CompressedConversionObservation = [
-  bidPrice: number,
-  askPrice: number,
-  transportFees: number,
-  exportTariff: number,
-  importTariff: number,
-  sugarPrice: number,
-  sunlightIndex: number,
-];
+export type CompressedConversionObservation = number[] | Record<string, number>;
 
 export type CompressedObservations = [
   plainValueObservations: Record<Product, ObservationValue>,

@@ -2,6 +2,11 @@ import { Center, Container, Grid, Title } from '@mantine/core';
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useStore } from '../../store.ts';
+import {
+  conversionObservationPriceKeys,
+  conversionObservationTransportKeys,
+  getVisibleConversionObservationKeys,
+} from '../../utils/conversionObservations.ts';
 import { formatNumber } from '../../utils/format.ts';
 import { AlgorithmSummaryCard } from './AlgorithmSummaryCard.tsx';
 import { ConversionPriceChart } from './ConversionPriceChart.tsx';
@@ -39,8 +44,9 @@ export function VisualizerPage(): ReactNode {
 
   const symbols = new Set<string>();
   const plainValueObservationSymbols = new Set<string>();
+  const conversionObservationKeysBySymbol: Record<string, Set<string>> = {};
 
-  for (let i = 0; i < algorithm.data.length; i += 1000) {
+  for (let i = 0; i < algorithm.data.length; i++) {
     const row = algorithm.data[i];
 
     for (const key of Object.keys(row.state.listings)) {
@@ -49,6 +55,16 @@ export function VisualizerPage(): ReactNode {
 
     for (const key of Object.keys(row.state.observations.plainValueObservations)) {
       plainValueObservationSymbols.add(key);
+    }
+
+    for (const [symbol, observation] of Object.entries(row.state.observations.conversionObservations)) {
+      if (conversionObservationKeysBySymbol[symbol] === undefined) {
+        conversionObservationKeysBySymbol[symbol] = new Set();
+      }
+
+      for (const key of getVisibleConversionObservationKeys({ [symbol]: observation })) {
+        conversionObservationKeysBySymbol[symbol].add(key);
+      }
     }
   }
 
@@ -73,25 +89,31 @@ export function VisualizerPage(): ReactNode {
       return;
     }
 
-    symbolColumns.push(
-      <Grid.Col key={`${symbol} - conversion price`} span={{ xs: 12, sm: 6 }}>
-        <ConversionPriceChart symbol={symbol} />
-      </Grid.Col>,
-    );
+    const conversionObservationKeys = conversionObservationKeysBySymbol[symbol] ?? new Set();
 
-    symbolColumns.push(
-      <Grid.Col key={`${symbol} - transport`} span={{ xs: 12, sm: 6 }}>
-        <TransportChart symbol={symbol} />
-      </Grid.Col>,
-    );
+    if (conversionObservationPriceKeys.some(key => conversionObservationKeys.has(key))) {
+      symbolColumns.push(
+        <Grid.Col key={`${symbol} - conversion price`} span={{ xs: 12, sm: 6 }}>
+          <ConversionPriceChart symbol={symbol} />
+        </Grid.Col>,
+      );
+    }
 
-    symbolColumns.push(
-      <Grid.Col key={`${symbol} - environment`} span={{ xs: 12, sm: 6 }}>
-        <EnvironmentChart symbol={symbol} />
-      </Grid.Col>,
-    );
+    if (conversionObservationTransportKeys.some(key => conversionObservationKeys.has(key))) {
+      symbolColumns.push(
+        <Grid.Col key={`${symbol} - transport`} span={{ xs: 12, sm: 6 }}>
+          <TransportChart symbol={symbol} />
+        </Grid.Col>,
+      );
+    }
 
-    symbolColumns.push(<Grid.Col key={`${symbol} - environment`} span={{ xs: 12, sm: 6 }} />);
+    if (![...conversionObservationKeys].every(key => [...conversionObservationPriceKeys, ...conversionObservationTransportKeys].includes(key))) {
+      symbolColumns.push(
+        <Grid.Col key={`${symbol} - observations`} span={{ xs: 12, sm: 6 }}>
+          <EnvironmentChart symbol={symbol} />
+        </Grid.Col>,
+      );
+    }
   });
 
   sortedPlainValueObservationSymbols.forEach(symbol => {
